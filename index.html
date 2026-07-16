@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tropical Tic-Tac-Toe</title>
+  <style>
+    :root {
+      --sky-top: #0f4a64;
+      --sky-mid: #1d7d6c;
+      --sky-bottom: #0d3a49;
+      --x-blue: #1f7ccf;
+      --x-blue-dark: #0a4f7b;
+      --o-green: #2cae5f;
+      --o-green-dark: #106a3f;
+      --panel: rgba(7, 26, 35, 0.8);
+      --text: #fefefe;
+      --muted: #dff8ff;
+      --accent: #ffe08d;
+      --empty: #f8e4b2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--sky-top), var(--sky-mid) 45%, var(--sky-bottom));
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(255,255,255,0.16), transparent 22%),
+        radial-gradient(circle at 80% 16%, rgba(255,255,255,0.14), transparent 24%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .palm {
+      position: fixed;
+      bottom: -0.4rem;
+      width: 13rem;
+      height: 22rem;
+      opacity: 0.95;
+      z-index: 0;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+    }
+
+    .palm::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 1rem;
+      height: 13.5rem;
+      background: linear-gradient(180deg, #4a2c1a, #1f130d);
+      border-radius: 999px;
+    }
+
+    .palm::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 11.5rem;
+      width: 9.5rem;
+      height: 9rem;
+      transform: translateX(-50%) rotate(-18deg);
+      background: linear-gradient(90deg, #0c4826, #176a35 45%, #0c4826);
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      border-radius: 2rem;
+    }
+
+    .palm-left {
+      left: -1rem;
+    }
+
+    .palm-right {
+      right: -1rem;
+      transform: scaleX(-1);
+    }
+
+    .game-shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .panel {
+      width: min(94vw, 40rem);
+      padding: 1.1rem 1rem 1.15rem;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 1.3rem;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.28);
+    }
+
+    h1 {
+      margin: 0 0 0.25rem;
+      text-align: center;
+      font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin: 0 0 0.9rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .score-card {
+      padding: 0.6rem 0.45rem;
+      border-radius: 0.9rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.13);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .score-card strong {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 1.05rem;
+      color: #fff8c2;
+    }
+
+    .result-banner {
+      min-height: 1.8rem;
+      margin-bottom: 0.75rem;
+      text-align: center;
+      font-weight: 700;
+      color: #fefefe;
+      font-size: 1rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin: 0 auto 0.9rem;
+      max-width: 24rem;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 0.95rem;
+      color: #ffffff;
+      font-size: clamp(2.2rem, 5vw, 3.25rem);
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--empty);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+      transition: transform 0.16s ease, filter 0.16s ease;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.22);
+    }
+
+    .cell:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .cell:disabled {
+      cursor: default;
+      opacity: 0.95;
+    }
+
+    .cell.x {
+      background: linear-gradient(135deg, var(--x-blue), var(--x-blue-dark));
+    }
+
+    .cell.o {
+      background: linear-gradient(135deg, var(--o-green), var(--o-green-dark));
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    button.action-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 0.72rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #03263d;
+      background: linear-gradient(135deg, #9ff0e4, #7ecfff);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.16);
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #ffd36d, #ffa445);
+      color: #462200;
+    }
+
+    @media (max-width: 650px) {
+      .scoreboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .score-card {
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="palm palm-left"></div>
+  <div class="palm palm-right"></div>
+
+  <main class="game-shell">
+    <section class="panel">
+      <h1>🌴 Tropical Tic-Tac-Toe</h1>
+      <p class="subtitle">Sun, sea, and a friendly island showdown.</p>
+
+      <div class="scoreboard">
+        <div class="score-card">X Wins<br><strong id="xWins">0</strong></div>
+        <div class="score-card">O Wins<br><strong id="oWins">0</strong></div>
+        <div class="score-card">Ties<br><strong id="ties">0</strong></div>
+      </div>
+
+      <div id="resultBanner" class="result-banner">Round starts — X to play.</div>
+
+      <div id="board" class="board" aria-label="Tic-Tac-Toe board"></div>
+
+      <div class="actions">
+        <button id="newRoundBtn" class="action-btn">New Round</button>
+        <button id="resetScoresBtn" class="action-btn secondary">Reset Scores</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Storage key for the game's saved progress.
+    const STORAGE_KEY = "tropical-tictactoe-state";
+
+    // Winning lines for Tic-Tac-Toe.
+    const winningLines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    // Cache the UI elements used for rendering and interaction.
+    const boardElement = document.getElementById("board");
+    const resultBanner = document.getElementById("resultBanner");
+    const xWinsEl = document.getElementById("xWins");
+    const oWinsEl = document.getElementById("oWins");
+    const tiesEl = document.getElementById("ties");
+    const newRoundBtn = document.getElementById("newRoundBtn");
+    const resetScoresBtn = document.getElementById("resetScoresBtn");
+
+    // Create a fresh game state object.
+    function createInitialState() {
+      return {
+        board: Array(9).fill(""),
+        currentPlayer: "X",
+        gameStatus: "playing",
+        resultText: "Round starts — X to play.",
+        scores: {
+          xWins: 0,
+          oWins: 0,
+          ties: 0
+        }
+      };
+    }
+
+    // Load the saved state from localStorage.
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return createInitialState();
+
+        const parsed = JSON.parse(saved);
+        const base = createInitialState();
+
+        return {
+          ...base,
+          ...parsed,
+          board: Array.isArray(parsed.board) ? parsed.board : base.board,
+          scores: {
+            ...base.scores,
+            ...(parsed.scores || {})
+          }
+        };
+      } catch (error) {
+        console.warn("Could not load game state:", error);
+        return createInitialState();
+      }
+    }
+
+    // Save the current state so the game persists across refreshes.
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    // Determine whether there is a winning line on the board.
+    function checkWinner(board) {
+      for (const line of winningLines) {
+        const [a, b, c] = line;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          return board[a];
+        }
+      }
+      return null;
+    }
+
+    // Render the board and scoreboard using the live app state.
+    function render(state) {
+      xWinsEl.textContent = state.scores.xWins;
+      oWinsEl.textContent = state.scores.oWins;
+      tiesEl.textContent = state.scores.ties;
+      resultBanner.textContent = state.resultText;
+
+      boardElement.innerHTML = "";
+      state.board.forEach((value, index) => {
+        const button = document.createElement("button");
+        button.className = `cell ${value ? value.toLowerCase() : ""}`;
+        button.dataset.index = index;
+        button.textContent = value;
+        button.disabled = Boolean(value) || state.gameStatus !== "playing";
+        button.setAttribute("aria-label", value ? `${value} at cell ${index + 1}` : `Empty cell ${index + 1}`);
+        button.addEventListener("click", () => handleMove(state, index));
+        boardElement.appendChild(button);
+      });
+    }
+
+    // Handle a player move and update the result banner and counters.
+    function handleMove(state, index) {
+      if (state.gameStatus !== "playing" || state.board[index]) return;
+
+      state.board[index] = state.currentPlayer;
+
+      const winner = checkWinner(state.board);
+
+      if (winner) {
+        state.gameStatus = "finished";
+        if (winner === "X") {
+          state.scores.xWins += 1;
+          state.resultText = "Winner: X wins this round!";
+        } else {
+          state.scores.oWins += 1;
+          state.resultText = "Winner: O wins this round!";
+        }
+      } else if (state.board.every(Boolean)) {
+        state.gameStatus = "finished";
+        state.scores.ties += 1;
+        state.resultText = "Tie: X and O share the round.";
+      } else {
+        state.currentPlayer = state.currentPlayer === "X" ? "O" : "X";
+        state.resultText = `Next up — ${state.currentPlayer}`;
+      }
+
+      saveState(state);
+      render(state);
+    }
+
+    // Start a fresh round without clearing the score counts.
+    function startNewRound(state) {
+      state.board = Array(9).fill("");
+      state.currentPlayer = "X";
+      state.gameStatus = "playing";
+      state.resultText = "Round starts — X to play.";
+      saveState(state);
+      render(state);
+    }
+
+    // Reset the scoreboard and current round.
+    function resetScores(state) {
+      state.scores = {
+        xWins: 0,
+        oWins: 0,
+        ties: 0
+      };
+      state.board = Array(9).fill("");
+      state.currentPlayer = "X";
+      state.gameStatus = "playing";
+      state.resultText = "Scores reset — X to play.";
+      saveState(state);
+      render(state);
+    }
+
+    // Initialize the app from saved state and wire up the buttons.
+    const state = loadState();
+
+    newRoundBtn.addEventListener("click", () => startNewRound(state));
+    resetScoresBtn.addEventListener("click", () => resetScores(state));
+
+    render(state);
+  </script>
+</body>
+</html>
